@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Yönlendiriliyor…</title>
+  <style>
+    body{font-family:system-ui,Arial;background:#f7f8fb;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .card{padding:20px;border-radius:12px;background:white;box-shadow:0 6px 22px rgba(0,0,0,0.08);text-align:center}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="msg">Yönlendiriliyorsunuz…</div>
+  </div>
+
+<script>
+(async function(){
+  // CONFIG: burayı kendi Apps Script webapp URL'inle değiştir
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec';
+  // Default profil sayfan (eğer `to` param yoksa buraya yönlendir)
+  const DEFAULT_PROFILE = 'https://dgkn17.github.io/techvizit-profile/';
+
+  const params = new URLSearchParams(location.search);
+  const uid = params.get('uid') || '0';
+  const to = params.get('to') || DEFAULT_PROFILE;
+  const data = params.get('data') || '';
+
+  const payload = {
+    uid: uid,
+    data: data,
+    userAgent: navigator.userAgent || '',
+    platform: navigator.platform || '',
+    screen: (screen && screen.width ? (screen.width + 'x' + screen.height) : ''),
+    referrer: document.referrer || '',
+    ts: new Date().toISOString()
+  };
+
+  // Gönderim için timeout — eğer logging gecikirse yine redirect edilsin
+  const timeoutMs = 1500;
+  let logged = false;
+
+  try {
+    const controller = new AbortController();
+    const id = setTimeout(()=> controller.abort(), timeoutMs);
+
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+      mode: 'cors',
+      credentials: 'omit'
+    });
+    clearTimeout(id);
+    logged = true;
+  } catch (e) {
+    // console.warn('Logging fail', e);
+  }
+
+  // Her durumda profile sayfasına yönlendir (data paramini koru)
+  const dest = decodeURIComponent(to);
+  const sep = dest.indexOf('?') === -1 ? '?' : '&';
+  location.replace(dest + sep + 'data=' + encodeURIComponent(data));
+})();
+</script>
+</body>
+</html>
